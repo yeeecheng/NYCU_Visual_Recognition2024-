@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES="3" python test.py
+CUDA_VISIBLE_DEVICES="3" python test.py --checkpoint /mnt/HDD7/yicheng/visual_recognition/hw1/weights/best_model28.pth

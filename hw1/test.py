@@ -4,9 +4,8 @@ import argparse
 import pandas as pd
 import torchvision.transforms as transforms
 
-from torch.utils.data import Dataset, DataLoader
-from torchvision.models import resnet152, ResNet152_Weights
-from PIL import Image
+from utils.model import Resnet152
+from torch.utils.data import DataLoader
 from utils.dataloader import ClassificationDataset
 
 def predict(model, test_loader, device):
@@ -38,9 +37,8 @@ def test(args):
     test_dataset = ClassificationDataset(root_dir=args.data_path, mode="test", transform=transform)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
 
-    model = resnet152(weights=None)
     num_classes = 100
-    model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+    model = Resnet152(num_classes=num_classes, mode="test")
 
     checkpoint = torch.load(args.checkpoint, map_location=device)
     model.load_state_dict(checkpoint["model_state_dict"])
@@ -55,7 +53,7 @@ def test(args):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", type=str, default= "/mnt/HDD7/yicheng/visual_recognition/hw1/weights/best_model98.pth")
+    parser.add_argument("--checkpoint", type=str, default= "*.pth")
     parser.add_argument("--data_path", type=str, default="./data")
     parser.add_argument("--output_csv", type=str, default="./prediction.csv")
     parser.add_argument("--batch_size", type=int, default=64)

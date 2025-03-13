@@ -5,15 +5,14 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
-import torchvision
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
-from torchvision.models import resnet152, ResNet152_Weights
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from utils.train import train_one_epoch
+from utils.model import Resnet152
 from utils.evaluate import evaluate
+from utils.train import train_one_epoch
 from utils.dataloader import ClassificationDataset
 
 def main(args):
@@ -50,16 +49,16 @@ def main(args):
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, sampler=train_sampler, num_workers=args.num_workers)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, sampler=val_sampler, num_workers=args.num_workers)
 
-    model = resnet152(weights=ResNet152_Weights.DEFAULT)
     num_classes = len(train_dataset.classes)
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    model = Resnet152(num_classes=num_classes)
     model.to(device)
     model = DDP(model, device_ids=[local_rank], output_device=local_rank)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=20)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=20)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     
     best_val_acc = 0.0
     strat_epoch = 0
@@ -68,7 +67,6 @@ def main(args):
         train_sampler.set_epoch(epoch)
         train_avg_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
         val_avg_loss, val_acc = evaluate(model, val_loader, criterion, device)
-        scheduler.step()
 
         train_loss_tensor = torch.tensor(train_avg_loss, device=device)
         train_acc_tensor = torch.tensor(train_acc, device=device)
@@ -84,6 +82,7 @@ def main(args):
         train_acc = train_acc_tensor.item() / world_size
         val_avg_loss = val_loss_tensor.item() / world_size
         val_acc = val_acc_tensor.item() / world_size
+        scheduler.step(val_acc)
         
         if rank == 0:
             pbar.set_description(f"Epoch [{epoch+1}/{args.epochs}], train_loss: {train_avg_loss:.4f}, train_acc: {train_acc:.2f}%, val_loss: {val_avg_loss:.4f}, val_acc: {val_acc:.2f}%")
