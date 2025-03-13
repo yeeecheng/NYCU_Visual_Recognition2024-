@@ -38,7 +38,12 @@ class ClassificationDataset(Dataset):
 
         if self.transform:
             image = self.transform(image)
-        return image, torch.tensor(label, dtype=torch.long)
+        
+        if self.mode in ["train", "val"]:
+            return image, torch.tensor(label, dtype=torch.long)
+        else:
+            img_name = img_path.split("/")[-1].split(".")[0]
+            return image, img_name
 
     def __len__(self):
         return len(self.image_paths)

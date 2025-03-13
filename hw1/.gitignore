@@ -1,3 +1,4 @@
 hw1-data.tar.gz
 *__pycache__
 data/*
+weights/*
