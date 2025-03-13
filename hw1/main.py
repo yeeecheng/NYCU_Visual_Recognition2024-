@@ -11,9 +11,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.models import resnet152, ResNet152_Weights
 from tqdm import tqdm
-from train import train_one_epoch
-from evaluate import evaluate
-from dataloader import ClassificationDataset
+from utils.train import train_one_epoch
+from utils.evaluate import evaluate
+from utils.dataloader import ClassificationDataset
 
 def main(args):
 
@@ -26,17 +26,17 @@ def main(args):
     
     train_transform = transforms.Compose([
         transforms.Resize((256, 256)),
-        transforms.CenterCrop(size=((200, 200))),
+        transforms.CenterCrop(size=((224, 224))),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomRotation(degrees=15, center=(0, 0)),
         transforms.ToTensor(),          
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     val_transform = transforms.Compose([
-        transforms.Resize((200, 200)),  
+        transforms.Resize((224, 224)),  
         transforms.ToTensor(),          
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])    
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
     ])
 
     train_dataset = ClassificationDataset(root_dir=args.data_path, mode="train", transform=train_transform)

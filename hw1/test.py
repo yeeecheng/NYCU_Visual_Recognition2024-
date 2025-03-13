@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 from torchvision.models import resnet152, ResNet152_Weights
 from PIL import Image
-from dataloader import ClassificationDataset
+from utils.dataloader import ClassificationDataset
 
 def predict(model, test_loader, device):
     model.eval()
@@ -30,10 +30,9 @@ def test(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     transform = transforms.Compose([
-        transforms.Resize((200, 200)),
+        transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])   
-        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     test_dataset = ClassificationDataset(root_dir=args.data_path, mode="test", transform=transform)
