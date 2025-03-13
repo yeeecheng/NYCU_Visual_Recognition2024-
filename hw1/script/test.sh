@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES="3" python ../test.py
+CUDA_VISIBLE_DEVICES="3" python test.py

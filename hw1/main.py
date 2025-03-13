@@ -11,6 +11,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.models import resnet152, ResNet152_Weights
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 from utils.train import train_one_epoch
 from utils.evaluate import evaluate
 from utils.dataloader import ClassificationDataset
@@ -24,17 +25,20 @@ def main(args):
     torch.cuda.set_device(local_rank)
     device = torch.device(f"cuda:{local_rank}")
     
+    if rank == 0:
+        writer = SummaryWriter(log_dir="./logs")
+
     train_transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.CenterCrop(size=((224, 224))),
+        transforms.Resize((300, 300)),
+        transforms.CenterCrop(size=((256, 256))),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15, center=(0, 0)),
+        transforms.RandomRotation(degrees=20, center=(0, 0)),
         transforms.ToTensor(),          
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     val_transform = transforms.Compose([
-        transforms.Resize((224, 224)),  
+        transforms.Resize((256, 256)),  
         transforms.ToTensor(),          
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
     ])
@@ -53,8 +57,9 @@ def main(args):
     model = DDP(model, device_ids=[local_rank], output_device=local_rank)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=20)
     
     best_val_acc = 0.0
     strat_epoch = 0
@@ -82,7 +87,12 @@ def main(args):
         
         if rank == 0:
             pbar.set_description(f"Epoch [{epoch+1}/{args.epochs}], train_loss: {train_avg_loss:.4f}, train_acc: {train_acc:.2f}%, val_loss: {val_avg_loss:.4f}, val_acc: {val_acc:.2f}%")
-            
+            writer.add_scalar('Loss/train', train_avg_loss, epoch)
+            writer.add_scalar('Accuracy/train', train_acc, epoch)
+            writer.add_scalar('Loss/val', val_avg_loss, epoch)
+            writer.add_scalar('Accuracy/val', val_acc, epoch)
+            writer.add_scalar('Learning Rate', scheduler.get_last_lr()[0], epoch)
+
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
                 checkpoint = {
@@ -92,17 +102,19 @@ def main(args):
                     'best_val_acc': best_val_acc
                 }
                 torch.save(checkpoint, os.path.join("./weights", f'best_model{epoch}.pth'))
-                pbar.set_description(f"New best model saved with val_acc: {best_val_acc:.2f}%")
-
+                pbar.set_description(f"New best model saved! Epoch [{epoch+1}/{args.epochs}], train_loss: {train_avg_loss:.4f}, train_acc: {train_acc:.2f}%, val_loss: {val_avg_loss:.4f}, val_acc: {val_acc:.2f}%")
+    
+    if rank == 0:
+        writer.close()
     dist.destroy_process_group()
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size per GPU")
-    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
-    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
-    parser.add_argument("--data_path", type=str, default="./data", help="Path to dataset")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of data loader workers")
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--lr", type=float, default=0.01)
+    parser.add_argument("--data_path", type=str, default="./data")
+    parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--backend", type=str, default="nccl", help="Distributed backend: nccl / gloo / mpi")
     return parser.parse_args()
 
