@@ -1,7 +1,7 @@
 # NYCU Computer Vision 2025 Spring HW1
 
-studentID: 313553014
-Name: 廖怡誠
+**StudentID**: 313553014 <br>
+**Name**: 廖怡誠
 
 ## Introduction
 
@@ -9,16 +9,18 @@ This project focuses on image classification of various plants and animals. Some
 
 For example:
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <div style="text-align: center; width: 48%;">
-    <img src="./src/img/pic1.png" alt="Picture 1" style="width: 100%;">
-    <p><strong>Pic 1.</strong> Complex background case.</p>
-  </div>
-  <div style="text-align: center; width: 48%;">
-    <img src="./src/img/pic2.png" alt="Picture 2" style="width: 100%;">
-    <p><strong>Pic 2.</strong> Miss target object case.</p>
-  </div>
-</div>
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./src/img/pic1.png" alt="Picture 1" width="100%"/><br/>
+      <strong>Pic 1.</strong> Complex background case.
+    </td>
+    <td align="center" width="50%">
+      <img src="./src/img/pic2.png" alt="Picture 2" width="100%"/><br/>
+      <strong>Pic 2.</strong> Miss target object case.
+    </td>
+  </tr>
+</table>
 
 To address this, I manually inspected the training images and found that the classification target is usually centered. Based on this, I cropped image borders to reduce background noise. I also applied extensive data augmentation—such as color jitter, random affine, erasing, and rotation—to improve generalization. Additionally, I tuned hyperparameters, optimizers, and learning rate schedules to further enhance performance.
 
