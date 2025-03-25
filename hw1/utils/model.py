@@ -2,6 +2,12 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet152, ResNet152_Weights
 
+def count_parameters(model):
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total parameters: {total}")
+    print(f"Trainable parameters: {trainable}")
+
 class Resnet152(nn.Module):
     def __init__(self, num_classes=100, mode="train"):
         super(Resnet152, self).__init__()
