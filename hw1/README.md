@@ -38,3 +38,8 @@ pip install -r requirements.txt
 
 
 ## Performence snapshot
+<div align="center">
+  <img src="./src/img/perfomance1.png" alt="Performance 1" width="60%"><br/>
+  <img src="./src/img/perfomance2.png" alt="Performance 2" width="60%"><br/>
+  <img src="./src/img/perfomance3.png" alt="Performance 3" width="60%">
+</div>
