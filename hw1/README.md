@@ -28,7 +28,7 @@ To address this, I manually inspected the training images and found that the cla
 
 ```
 git clone https://github.com/yeeecheng/NYCU_Visual_Recognition2024-.git
-cd hw1
+cd NYCU_Visual_Recognition2024-/hw1
 conda create -n hw1 python=3.9 -y
 conda activate hw1
 pip install --upgrade pip
@@ -40,6 +40,6 @@ pip install -r requirements.txt
 ## Performence snapshot
 <div align="center">
   <img src="./src/img/perfomance1.png" alt="Performance 1" width="60%"><br/>
-  <img src="./src/img/perfomance2.png" alt="Performance 2" width="60%"><br/>
+  <img src="./src/img/perfomance2.png" alt="Performance 2" width="40%"><br/>
   <img src="./src/img/perfomance3.png" alt="Performance 3" width="60%">
 </div>
