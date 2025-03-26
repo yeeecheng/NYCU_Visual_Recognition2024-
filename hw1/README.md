@@ -38,6 +38,9 @@ pip install -r requirements.txt
 
 
 ## Performence snapshot
+
+The model's training accuracy improved steadily, with a peak around epoch 10 and further gains later on. Validation accuracy followed a similar but more fluctuating trend, showing reasonable generalization. Loss curves dropped early, rose slightly mid-training, then declined again—mirroring the learning rate schedule. The cyclical learning rate (e.g., One Cycle or cosine annealing) helped optimization, with improvements aligning well with learning rate dips. Overall, the model converged successfully with strong performance on both training and validation sets.
+
 <div align="center">
   <img src="./src/img/perfomance1.png" alt="Performance 1" width="60%"><br/>
   <img src="./src/img/perfomance2.png" alt="Performance 2" width="40%"><br/>
