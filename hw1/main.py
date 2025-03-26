@@ -93,6 +93,8 @@ def main(args):
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     
+    os.makedirs("./weights", exist_ok=True)
+
     best_val_acc = 0.0
     strat_epoch = 0
     pbar = tqdm(range(strat_epoch, args.epochs))
