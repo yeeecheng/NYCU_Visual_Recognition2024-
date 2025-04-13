@@ -42,6 +42,7 @@ pip install -r requirements.txt
 bash ./script/train.sh
 ```
 You can modify the augments usage: 
+
 python main.py [-h] --data_dir DATA_DIR [--output_dir OUTPUT_DIR] [--batch_size BATCH_SIZE]
                [--epochs EPOCHS] [--lr LR] [--num_workers NUM_WORKERS] [--backend BACKEND]
 * test
@@ -49,17 +50,19 @@ python main.py [-h] --data_dir DATA_DIR [--output_dir OUTPUT_DIR] [--batch_size 
 bash ./script/task1_predict.sh
 ```
 You can modify the augments usage: 
+
 python task1_predict.py [-h] --data_dir DATA_DIR --weight_path WEIGHT_PATH
                         [--output_json OUTPUT_JSON] [--score_thresh SCORE_THRESH]
 ```
 bash ./script/task2_predict.sh
 ```
 You can modify the augments usage: 
+
 python task2_predict.py [-h] --pred_json PRED_JSON --image_dir IMAGE_DIR [--output_csv OUTPUT_CSV
 
 ## Performence snapshot
 
-The model's training accuracy improved steadily, with a peak around epoch 10 and further gains later on. Validation accuracy followed a similar but more fluctuating trend, showing reasonable generalization. Loss curves dropped early, rose slightly mid-training, then declined again—mirroring the learning rate schedule. The cyclical learning rate (e.g., One Cycle or cosine annealing) helped optimization, with improvements aligning well with learning rate dips. Overall, the model converged successfully with strong performance on both training and validation sets.
+Based on the ablation studies, the final configuration adopts the fasterrcnn_resnet50_fpn_v2 model with all five backbone stages set as trainable. In addition, color-based data augmentation is applied to improve generalization. This combination consistently achieved strong performance in both loss reduction and detection accuracy. While the adjustment of anchor sizes did not lead to performance gains in my current setting, I believe that with finer-grained tuning, particularly tailored to the scale distribution of digits in the dataset, it has the potential to yield further improvements.
 
 <div align="center">
   <img src="./src/per1.png" alt="Performance 1" width="60%"><br/>
