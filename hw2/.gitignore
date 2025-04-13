@@ -1,0 +1,6 @@
+nycu-hw2-data.tar.gz
+*__pycache__
+nycu-hw2-data/*
+weights/*
+logs/*
+transformed_samples/*
