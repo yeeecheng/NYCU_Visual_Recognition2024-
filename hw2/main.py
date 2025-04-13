@@ -9,9 +9,9 @@ import torch.distributed as dist
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader, DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from task1_predict import predict
 from utils.evaluate import evaluate
@@ -19,17 +19,17 @@ from utils.utils import evaluate_mAP
 from utils.train import train_one_epoch
 from utils.model import FasterRCNN, count_parameters
 from utils.dataloader import DigitDetectionDataset, collate_fn
-import torchvision.utils as vutils
+# import torchvision.utils as vutils
 
-def save_transformed_images(dataset, save_dir="./src/transformed_samples", num_images=10):
-    os.makedirs(save_dir, exist_ok=True)
-    for i in range(min(num_images, len(dataset))):
-        img, label = dataset[i]  
-        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-        img = img * std + mean 
-        img = torch.clamp(img, 0, 1)
-        vutils.save_image(img, os.path.join(save_dir, f"sample_{i}_label_{label}.png"))
+# def save_transformed_images(dataset, save_dir="./src/transformed_samples", num_images=10):
+#     os.makedirs(save_dir, exist_ok=True)
+#     for i in range(min(num_images, len(dataset))):
+#         img, label = dataset[i]  
+#         mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+#         std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+#         img = img * std + mean 
+#         img = torch.clamp(img, 0, 1)
+#         vutils.save_image(img, os.path.join(save_dir, f"sample_{i}_label_{label}.png"))
 
 def get_train_transform():
     return transforms.Compose([

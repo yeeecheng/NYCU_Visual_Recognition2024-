@@ -2,7 +2,6 @@ import os
 import torch
 import json
 import argparse
-import albumentations as A
 from tqdm import tqdm
 
 from torch.utils.data import DataLoader
@@ -12,7 +11,6 @@ from utils.dataloader import DigitDetectionDataset, collate_fn
 
 def get_test_transform():
     return transforms.Compose([
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         transforms.ToTensor(),          
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
     ])

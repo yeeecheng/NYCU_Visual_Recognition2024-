@@ -1,0 +1,7 @@
+pandas==2.2.3
+Pillow==11.2.1
+pycocotools==2.0.8
+torch==2.5.1+cu118
+torchvision==0.20.1+cu118
+tqdm==4.67.1
+tensorboard

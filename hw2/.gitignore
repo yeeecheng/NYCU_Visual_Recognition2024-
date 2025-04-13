@@ -4,3 +4,4 @@ nycu-hw2-data/*
 weights/*
 logs/*
 transformed_samples/*
+bbox/*
