@@ -42,11 +42,3 @@ You can modify the augments usage:
 python task2_predict.py [-h] --pred_json PRED_JSON --image_dir IMAGE_DIR [--output_csv OUTPUT_CSV
 
 ## Performence snapshot
-
-Based on the ablation studies, the final configuration adopts the fasterrcnn_resnet50_fpn_v2 model with all five backbone stages set as trainable. In addition, color-based data augmentation is applied to improve generalization. This combination consistently achieved strong performance in both loss reduction and detection accuracy. While the adjustment of anchor sizes did not lead to performance gains in my current setting, I believe that with finer-grained tuning, particularly tailored to the scale distribution of digits in the dataset, it has the potential to yield further improvements.
-
-<div align="center">
-  <img src="./src/per1.png" alt="Performance 1" width="60%"><br/>
-  <img src="./src/per2.png" alt="Performance 2" width="40%"><br/>
-  <img src="./src/per3.png" alt="Performance 3" width="60%">
-</div>

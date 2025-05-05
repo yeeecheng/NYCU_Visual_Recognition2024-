@@ -30,7 +30,8 @@ def run_inference(model, test_dir, id_map_json, output_path, device, score_thres
     results = []
 
     with open(id_map_json, "r") as f:
-        name_to_id = json.load(f)
+        raw = json.load(f)
+        name_to_id = {item["file_name"]: item["id"] for item in raw}
 
     test_files = sorted(os.listdir(test_dir))
     for fname in tqdm(test_files):

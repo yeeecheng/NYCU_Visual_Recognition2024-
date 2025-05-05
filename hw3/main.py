@@ -19,12 +19,12 @@ def get_train_transform():
     train_transform = A.Compose([
         A.HorizontalFlip(p=0.5),
         A.VerticalFlip(p=0.5),
-        A.RandomRotate90(p=0.3),
-        A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.2, rotate_limit=15, p=0.5, border_mode=0),
+        # A.RandomRotate90(p=0.3),
+        # A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.2, rotate_limit=15, p=0.5, border_mode=0),
         A.RandomBrightnessContrast(p=0.3),
         A.HueSaturationValue(p=0.3),
-        A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-        ToTensorV2()
+        # A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+        # ToTensorV2()
     ])
     return train_transform
 
@@ -45,10 +45,9 @@ def train(args):
 
     if rank == 0:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        log_dir = os.path.join("logs", f"run_{timestamp}")
-        os.makedirs(log_dir, exist_ok=True)
-        writer = SummaryWriter(log_dir=log_dir)
-        os.makedirs(args.output_dir, exist_ok=True)
+        output_dir = os.path.join(args.output_dir, f"run_{timestamp}")
+        os.makedirs(output_dir, exist_ok=True)
+        writer = SummaryWriter(log_dir=output_dir)
 
     train_dataset = MedicalInstanceDataset(root_dir=args.data_path, transforms=get_train_transform())
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
@@ -76,7 +75,7 @@ def train(args):
         train_avg_loss = train_loss_tensor.item() / world_size
 
         if rank == 0:
-            pbar.set_postfix(loss=train_avg_loss.item())
+            pbar.set_postfix(loss=train_avg_loss)
 
         lr_scheduler.step()
 
@@ -87,7 +86,7 @@ def train(args):
 
             if train_avg_loss < best_loss:
                 best_loss = train_avg_loss
-                torch.save(model.module.state_dict(), os.path.join(args.output_dir, f"maskrcnn_medical_epoch{epoch+1}.pth"))
+                torch.save(model.module.state_dict(), os.path.join(output_dir, f"maskrcnn_medical_epoch{epoch+1}.pth"))
                 print(f"[Epoch {epoch+1}] New best model saved with loss {best_loss:.4f}")
 
     if rank == 0:
@@ -101,7 +100,7 @@ def parse_args():
     parser.add_argument('--batch-size', type=int, default=1, help='batch size per GPU')
     parser.add_argument('--num-classes', type=int, default=5, help='number of classes including background')
     parser.add_argument('--data-path', type=str, default='./hw3-data-release/train', help='path to training data root')
-    parser.add_argument('--output-dir', type=str, default='checkpoints/', help='directory to save checkpoints')
+    parser.add_argument('--output-dir', type=str, default='./logs', help='directory to save checkpoints')
     parser.add_argument("--backend", type=str, default="nccl")
     return parser.parse_args()
 
