@@ -1,0 +1,6 @@
+hw3-data-release/*
+__pycache__
+*.png
+read_tif.py
+*.pth
+checkpoints/
