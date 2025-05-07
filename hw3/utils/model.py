@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
-from torchvision.models.detection import maskrcnn_resnet50_fpn_v2
+from torchvision.models.detection import maskrcnn_resnet50_fpn_v2, MaskRCNN_ResNet50_FPN_V2_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
@@ -10,8 +10,7 @@ class MaskRCNN(nn.Module):
         super(MaskRCNN, self).__init__()
 
         # Load the base model with pretrained weights
-        self.backbone = maskrcnn_resnet50_fpn_v2(weights="DEFAULT")
-
+        self.backbone = maskrcnn_resnet50_fpn_v2(weights=MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT)
         # Replace the box predictor head
         in_features = self.backbone.roi_heads.box_predictor.cls_score.in_features
         self.backbone.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)

@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES="0,1" torchrun  --nproc-per-node=2 main.py
+CUDA_VISIBLE_DEVICES="0" torchrun  --nproc-per-node=1 main.py

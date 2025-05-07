@@ -4,3 +4,8 @@ __pycache__
 read_tif.py
 *.pth
 logs/*
+debug_vis
+debug_vis_shift
+debug_vis_tile
+inf_vis
+test-results.json
