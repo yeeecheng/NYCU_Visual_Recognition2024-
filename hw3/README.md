@@ -10,11 +10,8 @@ This assignment tackles the challenging task of instance segmentation in medical
 To address this under strict constraints (vision-only models, <200M parameters, no external data), I build upon Mask R-CNN and improve it through:
 
 - Tiling large images to fit GPU memory and ignore empty regions,
-
 - Albumentations-based augmentation for improved robustness,
-
 - Refined training strategies (warm-up, learning rate tuning, weighted losses),
-
 - COCO-style output formatting for evaluation and CodaBench submission.
 
 These methods ensure a strong balance between accuracy, efficiency, and generalization, helping the model perform well under competitive settings.
@@ -24,20 +21,19 @@ The example of images in datasets after data augmentation:
 <table align="center">
   <tr>
     <td align="center" width="33%">
-      <img src="./src/demo1.png" alt="Picture 1" width="100%"/><br/>
+      <img src="./src/demo1.jpg" alt="Picture 1" width="100%"/><br/>
       <strong>Pic 1.</strong>
     </td>
     <td align="center" width="34%">
-      <img src="./src/demo2.png" alt="Picture 2" width="100%"/><br/>
+      <img src="./src/demo2.jpg" alt="Picture 2" width="100%"/><br/>
       <strong>Pic 2.</strong>
     </td>
     <td align="center" width="33%">
-      <img src="./src/demo3.png" alt="Picture 3" width="100%"/><br/>
+      <img src="./src/demo3.jpg" alt="Picture 3" width="100%"/><br/>
       <strong>Pic 3.</strong>
     </td>
   </tr>
 </table>
-
 
 ## How to install
 
@@ -50,23 +46,28 @@ pip install --upgrade pip
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 ```
+
 * train
+
 ```
 bash ./script/train.sh
 ```
+
 You can modify the augments usage:
 
 python main.py [-h] [--lr LR] [--epochs EPOCHS] [--batch-size BATCH_SIZE] [--num-classes NUM_CLASSES]
-               [--data-path DATA_PATH] [--output-dir OUTPUT_DIR] [--backend BACKEND]
+[--data-path DATA_PATH] [--output-dir OUTPUT_DIR] [--backend BACKEND]
+
 * test
+
 ```
 bash ./script/inference.sh
 ```
+
 You can modify the augments usage:
 
 python inference.py [-h] --ckpt CKPT [--test-dir TEST_DIR] [--id-map ID_MAP] [--output OUTPUT]
-                    [--score-thresh SCORE_THRESH]
-
+[--score-thresh SCORE_THRESH]
 
 ## Performence snapshot
 
@@ -80,7 +81,8 @@ Although a ResNet-101 backbone showed early promise (val loss down to 0.35), it 
 - Estimated potential: Higher with full ResNet-101 training
 
 <div align="center">
-  <img src="./src/per1.png" alt="Performance 1" width="60%"><br/>
-  <img src="./src/per2.png" alt="Performance 2" width="40%"><br/>
+  <img src="./src/per2.png" alt="Performance 1" width="60%"><br/>
+  <img src="./src/per1.png" alt="Performance 2" width="40%"><br/>
   <img src="./src/per3.png" alt="Performance 3" width="60%">
 </div>
+
