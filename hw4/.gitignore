@@ -2,3 +2,9 @@
 *.png
 hw4_realse_dataset.zip
 example_img2npz.py
+__pycache__
+checkpoint
+checksample
+DA-RCOT/PLOSSrain.mat
+DA-RCOT/TLOSSrain.mat
+DA-RCOT/pred.npz

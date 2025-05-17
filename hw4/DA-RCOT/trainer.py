@@ -46,12 +46,14 @@ parser.add_argument('--deblur_dir', type=str, default='data/Train/Deblur/',
                     help='where training images of dehazing saves.')
 parser.add_argument('--lowlight_dir', type=str, default='data/Train/lowlight/',
                     help='where training images of deraining saves.')
+parser.add_argument('--desnow_dir', type=str, default='data/Train/Desnow/',
+                    help='where training images of deraining saves.')
 
 
 # parser.add_argument("--degset", default="./datasets/Deraining/train/Rain13K/input/", type=str, help="degraded data")
 # parser.add_argument("--tarset", default="./datasets/Deraining/train/Rain13K/target/", type=str, help="target data")
-parser.add_argument("--degset", default="./data/test/derain/Rain100L/input/", type=str, help="degraded data")
-parser.add_argument("--tarset", default="./data/test/derain/Rain100L/target/", type=str, help="target data")
+# parser.add_argument("--degset", default="./data/test/derain/Rain100L/input/", type=str, help="degraded data")
+# parser.add_argument("--tarset", default="./data/test/derain/Rain100L/target/", type=str, help="target data")
 parser.add_argument("--Sigma", default=10000, type=float)
 parser.add_argument("--sigma", default=1, type=float)
 parser.add_argument("--optimizer", default="RMSprop", type=str, help="optimizer type")
@@ -145,19 +147,20 @@ def main():
     training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, \
                                       batch_size=opt.batchSize, shuffle=True)
     num = 0
-    deg_list = glob.glob(opt.degset + "*")
-    deg_list = sorted(deg_list)
+    # deg_list = glob.glob(opt.degset + "*")
+    # deg_list = sorted(deg_list)
 
-    tar_list = sorted(glob.glob(opt.tarset + "*"))
+    # tar_list = sorted(glob.glob(opt.tarset + "*"))
+    os.makedirs("checksample/all", exist_ok=True)
     for epoch in range(opt.start_epoch, opt.nEpochs + 1):
         mse = 0
         Tloss = 0
         Ploss = 0
         a, b, c = train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch)
-        p = evaluate(Tnet, deg_list, tar_list)
-        with open("./checksample/all/validation_results.txt", "a") as f:
-            f.write(
-                f"Net {opt.backbone}  Patchsize {patch_size} Epoch {epoch}, psnr {p:.4f}, Batchsize {opt.batchSize}\n")
+        # p = evaluate(Tnet, deg_list, tar_list)
+        # with open("./checksample/all/validation_results.txt", "a") as f:
+        #     f.write(
+        #         f"Net {opt.backbone}  Patchsize {patch_size} Epoch {epoch}, psnr {p:.4f}, Batchsize {opt.batchSize}\n")
         mse += a
 
         Tloss += b
@@ -358,7 +361,7 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
                     pos += torch.mean(torch.exp(-z1 * z2 / 0.07))
                 else:
                     neg += torch.mean(torch.exp(z1 * z2 / 0.07))
-                  
+
             contrastive_loss = pos + neg
 
 

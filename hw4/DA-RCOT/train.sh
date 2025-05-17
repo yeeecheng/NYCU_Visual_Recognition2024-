@@ -1,0 +1,12 @@
+python trainer.py --batchSize=2 \
+                --nEpochs=50 \
+                --pairnum=10000000 \
+                --Sigma=10000 \
+                --sigma=1 \
+                --de_type derain desnow \
+                --patch_size=128  \
+                --type all \
+                --gpus=1 \
+                --backbone=MRCNet \
+                --step=15 \
+                --resume=none

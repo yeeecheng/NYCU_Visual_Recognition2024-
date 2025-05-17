@@ -37,12 +37,12 @@ class TrainDataset(Dataset):
         self.noise_combine = noise_combine
         if not noise_combine:
             self.de_dict = {'denoise_15': 0, 'denoise_25': 1, 'denoise_50': 2, 'derain': 3, 'dehaze': 4, 'deblur': 5,
-                            'lowlight': 6, 'single': 7}
+                            'lowlight': 6, 'single': 7, 'desnow': 8}
             myprint(f"degradation type labels: {self.de_dict}")
         else:
             # noise is one degradaton category
             self.de_dict_combine = {'denoise_15': 0, 'denoise_25': 0, 'denoise_50': 0, 'derain': 1, 'dehaze': 2,
-                                    'deblur': 3, 'lowlight': 4}
+                                    'deblur': 3, 'lowlight': 4, 'desnow': 5}
             myprint(self.de_dict_combine)
 
         self._init_ids()
@@ -75,6 +75,10 @@ class TrainDataset(Dataset):
         if 'single' in self.de_type:
             myprint('... init single train dataset')
             self._init_single_ids()
+        if 'desnow' in self.de_type:
+            myprint('... init desnow train dataset')
+            self._init_desnow_ids()
+
         random.shuffle(self.de_type)
 
     def _init_noise_clean_ids(self):
@@ -119,13 +123,25 @@ class TrainDataset(Dataset):
         # rain index
         temp_ids = []
         rs = os.path.join(self.args.data_file_dir, "rainy/rainTrain.txt")
-        temp_ids += [self.args.derain_dir + id_.strip() for id_ in open(rs)]
+        temp_ids += [id_.strip() for id_ in open(rs)]
         self.rs_ids = [{"clean_id": x, "de_type": 3} for x in temp_ids]
-        self.rs_ids = self.rs_ids * 360
+        # self.rs_ids = self.rs_ids * 360
 
-        self.rl_counter = 0
+        self.snow_counter = 0
         self.num_rl = len(self.rs_ids)
         myprint("Total Rainy Ids : {}".format(self.num_rl))
+
+    def _init_desnow_ids(self):
+        # snow index
+        temp_ids = []
+        snow = os.path.join(self.args.data_file_dir, "snowy/snowTrain.txt")
+        temp_ids += [id_.strip() for id_ in open(snow)]
+        self.snow_ids = [{"clean_id": x, "de_type": 8} for x in temp_ids]
+        # self.snow_ids = self.snow_ids * 360
+
+        self.snow_counter = 0
+        self.num_snow = len(self.snow_ids)
+        myprint("Total Snowy Ids : {}".format(self.num_snow))
 
     def _init_blur_ids(self):
         temp_ids = []
@@ -202,6 +218,8 @@ class TrainDataset(Dataset):
             self.sample_ids += self.lowlight_ids
         if 'single' in self.de_type:
             self.sample_ids += self.single_ids
+        if 'desnow' in self.de_type:
+            self.sample_ids += self.snow_ids
         myprint(f"...total sample ids: {len(self.sample_ids)}")
 
     def _resample_ids(self, sample_num):
@@ -234,9 +252,17 @@ class TrainDataset(Dataset):
         else:
             if de_id == 3:
                 # Rain Streak Removal
-                degrad_img = crop_img(np.array(Image.open(sample["clean_id"]).convert('RGB')), base=16)
-                clean_name = self._get_raingt_name(sample["clean_id"])
-                clean_img = crop_img(np.array(Image.open(clean_name).convert('RGB')), base=16)
+                # degrad_img = crop_img(np.array(Image.open(sample["clean_id"]).convert('RGB')), base=16)
+                # clean_name = self._get_raingt_name(sample["clean_id"])
+                # clean_img = crop_img(np.array(Image.open(clean_name).convert('RGB')), base=16)
+                # snow removal dataset
+                degrad_img = crop_img(np.array(
+                    Image.open(os.path.join(self.args.derain_dir, 'rainy/', sample["clean_id"])).convert('RGB')),
+                                      base=16)
+                clean_img = crop_img(np.array(
+                    Image.open(os.path.join(self.args.derain_dir, 'gt/', sample["clean_id"])).convert('RGB')),
+                                     base=16)
+                clean_name = sample["clean_id"]
             elif de_id == 4:
                 # Dehazing with SOTS outdoor training set
                 degrad_img = crop_img(np.array(Image.open(sample["clean_id"]).convert('RGB')), base=16)
@@ -269,6 +295,15 @@ class TrainDataset(Dataset):
                     Image.open(os.path.join(self.args.single_dir, 'target/', sample["clean_id"])).convert('RGB')),
                                      base=16)
                 clean_name = sample["clean_id"]
+            elif de_id == 8:
+                # snow removal dataset
+                degrad_img = crop_img(np.array(
+                    Image.open(os.path.join(self.args.desnow_dir, 'snowy/', sample["clean_id"])).convert('RGB')),
+                                      base=16)
+                clean_img = crop_img(np.array(
+                    Image.open(os.path.join(self.args.desnow_dir, 'gt/', sample["clean_id"])).convert('RGB')),
+                                     base=16)
+                clean_name = sample["clean_id"]
 
             degrad_patch, clean_patch = random_augmentation(*self._crop_patch(degrad_img, clean_img))
 
@@ -282,7 +317,7 @@ class TrainDataset(Dataset):
         else:
             # noise is one degradaton category
             self.de_dict_combine = {'denoise_15': 0, 'denoise_25': 0, 'denoise_50': 0, 'derain': 1, 'dehaze': 2,
-                                    'deblur': 3, 'lowlight': 4}
+                                    'deblur': 3, 'lowlight': 4, 'desnow': 5}
             de_id -= 2
             if de_id < 0:
                 de_id = 0
