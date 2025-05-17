@@ -1,0 +1,4 @@
+./DA-RCOT/data
+*.png
+hw4_realse_dataset.zip
+example_img2npz.py
