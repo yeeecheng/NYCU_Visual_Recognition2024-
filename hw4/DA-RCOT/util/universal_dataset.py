@@ -125,9 +125,8 @@ class TrainDataset(Dataset):
         rs = os.path.join(self.args.data_file_dir, "rainy/rainTrain.txt")
         temp_ids += [id_.strip() for id_ in open(rs)]
         self.rs_ids = [{"clean_id": x, "de_type": 3} for x in temp_ids]
-        # self.rs_ids = self.rs_ids * 360
+        self.rs_ids = self.rs_ids * 2
 
-        self.snow_counter = 0
         self.num_rl = len(self.rs_ids)
         myprint("Total Rainy Ids : {}".format(self.num_rl))
 
@@ -137,9 +136,8 @@ class TrainDataset(Dataset):
         snow = os.path.join(self.args.data_file_dir, "snowy/snowTrain.txt")
         temp_ids += [id_.strip() for id_ in open(snow)]
         self.snow_ids = [{"clean_id": x, "de_type": 8} for x in temp_ids]
-        # self.snow_ids = self.snow_ids * 360
+        self.snow_ids = self.snow_ids * 2
 
-        self.snow_counter = 0
         self.num_snow = len(self.snow_ids)
         myprint("Total Snowy Ids : {}".format(self.num_snow))
 

@@ -52,10 +52,6 @@ parser.add_argument('--desnow_dir', type=str, default='data/Train/Desnow/',
                     help='where training images of deraining saves.')
 
 
-# parser.add_argument("--degset", default="./datasets/Deraining/train/Rain13K/input/", type=str, help="degraded data")
-# parser.add_argument("--tarset", default="./datasets/Deraining/train/Rain13K/target/", type=str, help="target data")
-# parser.add_argument("--degset", default="./data/test/derain/Rain100L/input/", type=str, help="degraded data")
-# parser.add_argument("--tarset", default="./data/test/derain/Rain100L/target/", type=str, help="target data")
 parser.add_argument("--Sigma", default=10000, type=float)
 parser.add_argument("--sigma", default=1, type=float)
 parser.add_argument("--optimizer", default="RMSprop", type=str, help="optimizer type")
@@ -65,6 +61,9 @@ parser.add_argument('--patch_size', type=int, default=128, help='patchsize of in
 # path
 parser.add_argument('--data_file_dir', type=str, default='data_dir/', help='where clean images of denoising saves.')
 
+parser.add_argument('--lambda_pixel', type=float, default=1.0, help='weight of pixel loss')
+parser.add_argument('--lambda_freq', type=float, default=1.0, help='weight of frequency loss')
+parser.add_argument('--lambda_contrast', type=float, default=0.05, help='weight of contrastive loss')
 
 def get_parameter_number(net):
     total_num = sum(p.numel() for p in net.parameters())
@@ -98,10 +97,7 @@ def main():
     patch_size = opt.patch_size
     batch_size = opt.batchSize
     cudnn.benchmark = True
-    #
-    # deg_path = opt.degset
-    # tar_path = opt.tarset
-    # data_list = [deg_path, tar_path]
+
     print("------Datasets loaded------")
     if opt.backbone == 'RCNet':
         Tnet = RCNet(decoder=True)
@@ -112,7 +108,7 @@ def main():
 
     print("*****Using " + opt.backbone + " as the backbone architecture******")
     Fnet = F_net(patch_size)
-    # Pnet = PGenerator(batch_size)
+
     print("------Network constructed------")
     if cuda:
         Tnet = Tnet.cuda()
@@ -161,59 +157,6 @@ def main():
         writer.add_scalar("Epoch/Loss_mse", mes_loss, epoch)
     writer.close()
 
-
-
-def evaluate(Tnet, deg_list, tar_list):
-    cuda = True  # opt.cuda
-    pp = 0
-    print('----------validating-----------')
-    with torch.no_grad():
-        for deg_name, tar_name in zip(deg_list, tar_list):
-            name = tar_name.split('/')
-            print(name)
-            print("Processing ", deg_name)
-            deg_img = Image.open(deg_name).convert('RGB')
-            tar_img = Image.open(tar_name).convert('RGB')
-            deg_img = np.array(deg_img)
-            tar_img = np.array(tar_img)
-            h, w = deg_img.shape[0], deg_img.shape[1]
-            shape1 = deg_img.shape
-            shape2 = tar_img.shape
-            if (h % 4) or (w % 4) != 0:
-                continue
-            if shape1 != shape2:
-                continue
-            deg_img = np.transpose(deg_img, (2, 0, 1))
-            deg_img = torch.from_numpy(deg_img).float() / 255
-            deg_img = deg_img.unsqueeze(0)
-            data_degraded = deg_img
-
-            tar_img = np.transpose(tar_img, (2, 0, 1))
-            tar_img = torch.from_numpy(tar_img).float() / 255
-            tar_img = tar_img.unsqueeze(0)
-            gt = tar_img
-            if cuda:
-                Tnet = Tnet.cuda()
-                gt = gt.cuda()
-                data_degraded = data_degraded.cuda()
-            else:
-                Tnet = Tnet.cpu()
-
-            # start_time = time.time()
-
-            im_output, _ = Tnet(data_degraded)
-            im_output = im_output.squeeze(0).cpu()
-            tar_img = tar_img.squeeze(0).cpu()
-
-            im_output = im_output.numpy()
-            tar_img = tar_img.numpy()
-            im_output = np.transpose(im_output, (1, 2, 0))
-            tar_img = np.transpose(tar_img, (1, 2, 0))
-            pp += psnr(im_output, tar_img, data_range=1)
-        p = pp / len(deg_list)
-        return p
-
-
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10"""
     lr = opt.lr * (0.1 ** (epoch // opt.step))
@@ -222,9 +165,7 @@ def adjust_learning_rate(optimizer, epoch):
 
 def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
     lr = adjust_learning_rate(F_optimizer, epoch - 1)
-    mse = []
-    Tloss = []
-    Dloss = []
+    pixel_losses, T_losses, D_losses = [], [], []
 
     for param_group in T_optimizer.param_groups:
         param_group["lr"] = lr / 2
@@ -232,34 +173,28 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
         param_group["lr"] = lr
 
     print("Epoch={}, lr={}".format(epoch, F_optimizer.param_groups[0]["lr"]))
-
     pbar = tqdm(enumerate(training_data_loader), total=len(training_data_loader), desc=f"Epoch {epoch}")
+
     for iteration, batch in pbar:
         ([_, de_id], degraded, target) = batch
 
         if opt.cuda:
-            target = target.cuda()
-            degraded = degraded.cuda()
+            degraded, target = degraded.cuda(), target.cuda()
 
-        # F-sub optimization
-
+        ####### 1. Discriminator update (F-sub optimization) #######
         freeze(Tnet);
-        # freeze(PGenerator);
         unfreeze(Fnet);
-        for iter in range(1):
+        for _ in range(1):
             Fnet.zero_grad()
 
-            out_disc = Fnet(target).squeeze()
-            F_real_loss = -out_disc.mean()
+            out_real = Fnet(target).squeeze()
+            F_real_loss = -out_real.mean()
 
             out_restored, _ = Tnet(degraded)
-            out_disc = Fnet(out_restored.data).squeeze()
-
-            F_fake_loss = out_disc.mean()
+            out_fake = Fnet(out_restored.data).squeeze()
+            F_fake_loss = out_fake.mean()
 
             F_train_loss = F_real_loss + F_fake_loss
-            Dloss.append(F_train_loss.data)
-
             F_train_loss.backward()
             F_optimizer.step()
 
@@ -269,14 +204,14 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
             alpha1 = alpha.cuda().expand_as(target)
             interpolated1 = Variable(alpha1 * target.data + (1 - alpha1) * out_restored.data, requires_grad=True)
 
-            out = Fnet(interpolated1).squeeze()
+            out_interp = Fnet(interpolated1).squeeze()
 
             # Computes and returns the sum of gradients of outputs with respect to the inputs.
             grad = \
-                torch.autograd.grad(outputs=out,  # outputs (sequence of Tensor) – outputs of the differentiated function
+                torch.autograd.grad(outputs=out_interp,  # outputs (sequence of Tensor) – outputs of the differentiated function
                                     inputs=interpolated1,
                                     # inputs (sequence of Tensor) – Inputs w.r.t. which the gradient will be returned (and not accumulated into .grad).
-                                    grad_outputs=torch.ones(out.size()).cuda(),
+                                    grad_outputs=torch.ones(out_interp.size()).cuda(),
                                     # grad_outputs (sequence of Tensor) – The “vector” in the vector-Jacobian product. Usually gradients w.r.t. each output. None values can be specified for scalar Tensors or ones that don’t require grad. If a None value would be acceptable for all grad_tensors, then this argument is optional. Default: None
                                     retain_graph=True,
                                     create_graph=True,
@@ -293,77 +228,97 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
             F_optimizer.step()
             del  gp_loss, f_loss_gp
 
-        # T-sub optmization
+        D_losses.append(F_train_loss.item())
+
+        ####### 2. Generator update (T-sub optimization) #######
         freeze(Fnet);
-        unfreeze(Tnet);
-
-        Fnet.zero_grad()
-        Tnet.zero_grad()
-
+        unfreeze(Tnet)
+        Tnet.zero_grad();
 
         out_restored, res_emd = Tnet(degraded)
-        out_disc = Fnet(out_restored).squeeze()
-        res = degraded - out_restored
-        mse_loss = (torch.mean(res ** 2)) ** 0.5
+        res = target - out_restored
 
-        res_fre = torch.fft.fft2(res)
-        fourier_res_peanlty = 0
-        contrastive_loss = 0
-        pos = 0
-        neg = 0
-        for i in range(res_fre.shape[0]):
-            # frequency penalty
-            res_fre_slice = res_fre[i, :]
-            if de_id[i] < 3:
-                fourier_res_peanlty += torch.mean((abs(res_fre_slice)) ** 2) ** 0.5
-            else:
-                fourier_res_peanlty += torch.mean((abs(res_fre_slice)))
+        # Pixel-wise L1 Loss (better for PSNR)
+        pixel_loss = F.l1_loss(out_restored, target)
 
-            # contrastive loss
-            z1 = F.normalize(res_emd[i, :].reshape(res_emd.shape[1]*res_emd.shape[2]*res_emd.shape[3]), dim=0)
-            for j in range(i+1, res_fre.shape[0]):
-                z2 = F.normalize(res_emd[j, :].reshape(res_emd.shape[1]*res_emd.shape[2]*res_emd.shape[3]), dim=0)
-                if de_id[i] == de_id[j]:
-                    pos += torch.mean(torch.exp(-z1 * z2 / 0.07))
-                else:
-                    neg += torch.mean(torch.exp(z1 * z2 / 0.07))
-
-            contrastive_loss = pos + neg
-
-
-        if iteration < opt.pairnum // opt.batchSize:
-            diff = out_restored - target
-            T_train_loss = - out_disc.mean() + opt.sigma * (mse_loss + fourier_res_peanlty + 0.1* contrastive_loss) + opt.Sigma * torch.mean(
-                abs(diff))
-
+        # Frequency-domain residual penalty
+        res_fft = torch.fft.fft2(res)
+        if (de_id < 3).any():
+            freq_loss = torch.mean(torch.abs(res_fft) ** 2)
         else:
-            T_train_loss = - out_disc.mean() + opt.sigma * (mse_loss + fourier_res_peanlty)
+            freq_loss = torch.mean(torch.abs(res_fft))
 
-        mse.append(mse_loss.data)
-        Tloss.append(T_train_loss.data)
+        # Contrastive loss over residual embeddings
+        pos_sim, neg_sim = 0.0, 0.0
+        for i in range(res_emd.size(0)):
+            z1 = F.normalize(res_emd[i].mean(dim=(1, 2)), dim=0)
+            for j in range(i + 1, res_emd.size(0)):
+                z2 = F.normalize(res_emd[j].mean(dim=(1, 2)), dim=0)
+                sim = torch.exp(torch.dot(z1, z2) / 0.07)
+                if de_id[i] == de_id[j]:
+                    pos_sim += sim
+                else:
+                    neg_sim += sim
+        contrastive_loss = -torch.log(pos_sim / (pos_sim + neg_sim + 1e-8)) if pos_sim > 0 and neg_sim > 0 else torch.tensor(0.0).cuda()
+
+        # Adversarial loss
+        adv_loss = -Fnet(out_restored).squeeze().mean()
+
+        # Final total loss with PSNR-oriented weighting
+        T_train_loss = (
+            adv_loss +
+            opt.lambda_pixel * pixel_loss +
+            opt.lambda_freq * freq_loss +
+            opt.lambda_contrast * contrastive_loss
+        )
+
         T_train_loss.backward()
         T_optimizer.step()
-        if iteration % 10 == 0:
-            save_image(out_restored.data, './checksample/' + opt.type + '/output.png')
-            save_image(degraded.data, './checksample/' + opt.type + '/degraded.png')
-            save_image(target.data, './checksample/' + opt.type + '/target.png')
-            save_image(2 * abs(res.data), './checksample/' + opt.type + '/res.png')
+
+        pixel_losses.append(pixel_loss.item())
+        T_losses.append(T_train_loss.item())
 
         global writer
         global_step = epoch * len(training_data_loader) + iteration
         writer.add_scalar("Loss/Loss_F", F_train_loss.item(), global_step)
         writer.add_scalar("Loss/Loss_T", T_train_loss.item(), global_step)
-        writer.add_scalar("Loss/Loss_mse", mse_loss.item(), global_step)
+        writer.add_scalar("Loss/Loss_mse", pixel_loss.item(), global_step)
+
         pbar.set_postfix({
             'Loss_F': F_train_loss.item(),
             'Loss_T': T_train_loss.item(),
-            'Loss_mse': mse_loss.item()
+            'Loss_mse': pixel_loss.item()
         })
 
         del T_train_loss, F_train_loss, z1, z2
 
-    return torch.mean(torch.FloatTensor(mse)), torch.mean(torch.FloatTensor(Tloss)), torch.mean(
-        torch.FloatTensor(Dloss))
+    # Evaluate PSNR on random training samples
+    def calculate_psnr(pred, target, max_val=1.0):
+        mse = F.mse_loss(pred, target)
+        psnr = 10 * torch.log10(max_val ** 2 / (mse + 1e-8))
+        return psnr.item()
+
+    Tnet.eval()
+    with torch.no_grad():
+        sampled_psnrs = []
+        num_samples = 4
+        for i, batch in enumerate(training_data_loader):
+            if i >= num_samples:
+                break
+            ([_, _], degraded, target) = batch
+            if opt.cuda:
+                degraded, target = degraded.cuda(), target.cuda()
+            restored, _ = Tnet(degraded)
+            psnr = calculate_psnr(restored, target)
+            sampled_psnrs.append(psnr)
+
+        avg_sample_psnr = sum(sampled_psnrs) / len(sampled_psnrs)
+        writer.add_scalar("Eval/TrainSample_PSNR", avg_sample_psnr, epoch)
+        print(f"Sample PSNR (Train): {avg_sample_psnr:.2f} dB")
+    Tnet.train()
+
+    return torch.mean(torch.FloatTensor(pixel_losses)), torch.mean(torch.FloatTensor(T_losses)), torch.mean(
+        torch.FloatTensor(D_losses))
 
 
 def save_checkpoint(Tnet, Fnet, epoch):
@@ -377,17 +332,6 @@ def save_checkpoint(Tnet, Fnet, epoch):
     torch.save(state, model_out_path)
 
     print("Checkpoint saved to {}".format(model_out_path))
-
-
-def PSNR(pred, gt, shave_border=0):
-    height, width = pred.shape[:2]
-    pred = pred[shave_border:height - shave_border, shave_border:width - shave_border]
-    gt = gt[shave_border:height - shave_border, shave_border:width - shave_border]
-    imdff = pred - gt
-    rmse = math.sqrt((imdff ** 2).mean())
-    if rmse == 0:
-        return 100
-    return 20 * math.log10(1.0 / rmse)
 
 
 if __name__ == "__main__":
