@@ -14,7 +14,7 @@ torch.manual_seed(1850)
 parser = argparse.ArgumentParser(description="PyTorch SRResNet Eval")
 parser.add_argument("--cuda", action="store_true", help="use cuda?")
 
-parser.add_argument("--model", default="./checkpoint/model_allMRCNet128__50_1.0.pth", type=str, help="model path")
+parser.add_argument("--model", default="./checkpoint/model_allMRCNet128_38_50_1.0.pth", type=str, help="model path")
 parser.add_argument("--save", default="./results/restore_imgs", type=str, help="savepath, Default: results")
 parser.add_argument("--saveres", default="./results/res_imgs", type=str, help="savepath, Default: residual")
 parser.add_argument("--degset", default="./data/Test/degraded/", type=str, help="degraded data")

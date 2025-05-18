@@ -17,6 +17,8 @@ from scipy import io as scio
 import torch.nn.functional as F
 import random
 import cv2
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 # Training settings
 parser = argparse.ArgumentParser(description="PyTorch SRResNet")
@@ -71,8 +73,14 @@ def get_parameter_number(net):
 
 
 def main():
-    global opt, Tnet
+    global opt, Tnet, writer
     opt = parser.parse_args()
+
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    output_dir = os.path.join("./logs", f"run_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    writer = SummaryWriter(log_dir=output_dir)
+    os.makedirs(os.path.join("runs", opt.type + "_" + opt.backbone), exist_ok=True)
     print(opt)
 
     cuda = opt.cuda
@@ -139,54 +147,20 @@ def main():
         F_optimizer = torch.optim.RMSprop(Fnet.parameters(), lr=opt.lr)
 
     print("------Training------")
-    MSE = []
-    TLOSS = []
-    PLOSS = []
-    train_set = TrainDataset(opt)
-    # train_set = DegTarDataset(deg_path, tar_path, pairnum=opt.pairnum)
-    training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, \
-                                      batch_size=opt.batchSize, shuffle=True)
-    num = 0
-    # deg_list = glob.glob(opt.degset + "*")
-    # deg_list = sorted(deg_list)
 
-    # tar_list = sorted(glob.glob(opt.tarset + "*"))
+    train_set = TrainDataset(opt)
+    training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, \
+                                      batch_size=opt.batchSize, shuffle=True, pin_memory=True)
     os.makedirs("checksample/all", exist_ok=True)
     for epoch in range(opt.start_epoch, opt.nEpochs + 1):
-        mse = 0
-        Tloss = 0
-        Ploss = 0
-        a, b, c = train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch)
-        # p = evaluate(Tnet, deg_list, tar_list)
-        # with open("./checksample/all/validation_results.txt", "a") as f:
-        #     f.write(
-        #         f"Net {opt.backbone}  Patchsize {patch_size} Epoch {epoch}, psnr {p:.4f}, Batchsize {opt.batchSize}\n")
-        mse += a
+        mes_loss, t_loss, p_loss = train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch)
 
-        Tloss += b
-        Ploss += c
-        num += 1
-        mse = mse / num
-        Tloss = Tloss / num
-        Ploss = Ploss / num
-        MSE.append(format(mse))
-        TLOSS.append(format(Tloss))
-        PLOSS.append(format(Ploss))
-        scio.savemat('TLOSSrain.mat', {'TLOSS': TLOSS})
-        scio.savemat('PLOSSrain.mat', {'PLOSS': PLOSS})
         save_checkpoint(Tnet, Fnet, epoch)
-    #
-    #             'w')
-    # for mse in MSE:
-    #     file.write(mse + '\n')
-    # file.close()
-    # file = open('./checksample/' + opt.type + '/mse_' + '_' + str(opt.nEpochs) + '_' + str(opt.sigma) + '.txt',
-    #
-    # file = open('./checksample/water/Tloss_' + '_' + str(opt.nEpochs) + '_' + str(opt.sigma) + '.txt',
-    #             'w')
-    # for g in TLOSS:
-    #     file.write(g + '\n')
-    # file.close()
+        writer.add_scalar("Epoch/Loss_T", t_loss, epoch)
+        writer.add_scalar("Epoch/Loss_F", p_loss, epoch)
+        writer.add_scalar("Epoch/Loss_mse", mes_loss, epoch)
+    writer.close()
+
 
 
 def evaluate(Tnet, deg_list, tar_list):
@@ -259,18 +233,13 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
 
     print("Epoch={}, lr={}".format(epoch, F_optimizer.param_groups[0]["lr"]))
 
-    for iteration, batch in enumerate(training_data_loader):
-        ([clean_name, de_id], degraded, target) = batch
-
-        # degraded = batch[0]
-        # target = batch[1]
-        # noise = np.random.normal(size=degraded.shape) * opt.noise_sigma/255.0
-        # noise=torch.from_numpy(noise).float()
+    pbar = tqdm(enumerate(training_data_loader), total=len(training_data_loader), desc=f"Epoch {epoch}")
+    for iteration, batch in pbar:
+        ([_, de_id], degraded, target) = batch
 
         if opt.cuda:
             target = target.cuda()
             degraded = degraded.cuda()
-        # noise = noise.cuda()
 
         # F-sub optimization
 
@@ -327,16 +296,14 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
         # T-sub optmization
         freeze(Fnet);
         unfreeze(Tnet);
-        # unfreeze(PGenerator);
+
         Fnet.zero_grad()
         Tnet.zero_grad()
-        # PGenerator.zero_grad()
 
-        # out_restored, _ = Tnet(degraded)
+
         out_restored, res_emd = Tnet(degraded)
         out_disc = Fnet(out_restored).squeeze()
         res = degraded - out_restored
-        # p = PGenerator(abs(res))
         mse_loss = (torch.mean(res ** 2)) ** 0.5
 
         res_fre = torch.fft.fft2(res)
@@ -353,7 +320,6 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
                 fourier_res_peanlty += torch.mean((abs(res_fre_slice)))
 
             # contrastive loss
-            # print(res_emd[i,:], res_emd[i+1,:])
             z1 = F.normalize(res_emd[i, :].reshape(res_emd.shape[1]*res_emd.shape[2]*res_emd.shape[3]), dim=0)
             for j in range(i+1, res_fre.shape[0]):
                 z2 = F.normalize(res_emd[j, :].reshape(res_emd.shape[1]*res_emd.shape[2]*res_emd.shape[3]), dim=0)
@@ -378,17 +344,21 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
         T_train_loss.backward()
         T_optimizer.step()
         if iteration % 10 == 0:
-            print("Epoch {}({}/{}):Loss_F: {:.5}, Loss_T: {:.5}, Loss_mse: {:.5}".format(epoch,
-                                                                                         iteration,
-                                                                                         len(training_data_loader),
-                                                                                         F_train_loss.data,
-                                                                                         T_train_loss.data,
-                                                                                         mse_loss.data,
-                                                                                         ))
             save_image(out_restored.data, './checksample/' + opt.type + '/output.png')
             save_image(degraded.data, './checksample/' + opt.type + '/degraded.png')
             save_image(target.data, './checksample/' + opt.type + '/target.png')
             save_image(2 * abs(res.data), './checksample/' + opt.type + '/res.png')
+
+        global writer
+        global_step = epoch * len(training_data_loader) + iteration
+        writer.add_scalar("Loss/Loss_F", F_train_loss.item(), global_step)
+        writer.add_scalar("Loss/Loss_T", T_train_loss.item(), global_step)
+        writer.add_scalar("Loss/Loss_mse", mse_loss.item(), global_step)
+        pbar.set_postfix({
+            'Loss_F': F_train_loss.item(),
+            'Loss_T': T_train_loss.item(),
+            'Loss_mse': mse_loss.item()
+        })
 
         del T_train_loss, F_train_loss, z1, z2
 
@@ -397,7 +367,7 @@ def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
 
 
 def save_checkpoint(Tnet, Fnet, epoch):
-    model_out_path = "checkpoint/" + "model_" + str(opt.type) + opt.backbone + str(opt.patch_size) + "_" + "_" + str(
+    model_out_path = "checkpoint/" + "model_" + str(opt.type) + opt.backbone + str(opt.patch_size) + "_" + str(epoch) + "_" + str(
         opt.nEpochs) + "_" + str(
         opt.sigma) + ".pth"
     state = {"epoch": epoch, "Tnet": Tnet, "Fnet": Fnet}

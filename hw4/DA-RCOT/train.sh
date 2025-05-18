@@ -1,4 +1,4 @@
-python trainer.py --batchSize=2 \
+python trainer.py --batchSize=3 \
                 --nEpochs=50 \
                 --pairnum=10000000 \
                 --Sigma=10000 \
@@ -8,5 +8,5 @@ python trainer.py --batchSize=2 \
                 --type all \
                 --gpus=1 \
                 --backbone=MRCNet \
-                --step=15 \
+                --step=20 \
                 --resume=none

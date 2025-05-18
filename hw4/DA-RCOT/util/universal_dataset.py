@@ -61,7 +61,7 @@ class TrainDataset(Dataset):
             myprint('... init denoising train dataset')
             self._init_noise_clean_ids()
         if 'derain' in self.de_type:
-            myprint('... init denoising train dataset')
+            myprint('... init derainy train dataset')
             self._init_rs_ids()
         if 'dehaze' in self.de_type:
             myprint('... init dehazing train dataset')
