@@ -19,6 +19,7 @@ import random
 import cv2
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 # Training settings
 parser = argparse.ArgumentParser(description="PyTorch SRResNet")
@@ -40,7 +41,7 @@ parser.add_argument('--de_type', nargs='+', default=['denoise_15', 'denoise_25',
                     help='which type of degradations is training and testing for.')
 parser.add_argument('--denoise_dir', type=str, default='data/Train/Denoise/',
                     help='where clean images of denoising saves.')
-parser.add_argument('--derain_dir', type=str, default='data/Train/Derain/',
+parser.add_argument('--derain_dir', type=str, default='./data/train/',
                     help='where training images of deraining saves.')
 parser.add_argument('--dehaze_dir', type=str, default='data/Train/Dehaze/',
                     help='where training images of dehazing saves.')
@@ -142,6 +143,8 @@ def main():
         T_optimizer = torch.optim.RMSprop(Tnet.parameters(), lr=opt.lr / 2)
         F_optimizer = torch.optim.RMSprop(Fnet.parameters(), lr=opt.lr)
 
+    T_scheduler = CosineAnnealingLR(T_optimizer, T_max=opt.nEpochs, eta_min=1e-6)
+    F_scheduler = CosineAnnealingLR(F_optimizer, T_max=opt.nEpochs, eta_min=1e-6)
     print("------Training------")
 
     train_set = TrainDataset(opt)
@@ -151,26 +154,17 @@ def main():
     for epoch in range(opt.start_epoch, opt.nEpochs + 1):
         mes_loss, t_loss, p_loss = train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch)
 
+        T_scheduler.step()
+        F_scheduler.step()
+
         save_checkpoint(Tnet, Fnet, epoch)
         writer.add_scalar("Epoch/Loss_T", t_loss, epoch)
         writer.add_scalar("Epoch/Loss_F", p_loss, epoch)
         writer.add_scalar("Epoch/Loss_mse", mes_loss, epoch)
     writer.close()
 
-def adjust_learning_rate(optimizer, epoch):
-    """Sets the learning rate to the initial LR decayed by 10"""
-    lr = opt.lr * (0.1 ** (epoch // opt.step))
-    return lr
-
-
 def train(training_data_loader, T_optimizer, F_optimizer, Tnet, Fnet, epoch):
-    lr = adjust_learning_rate(F_optimizer, epoch - 1)
     pixel_losses, T_losses, D_losses = [], [], []
-
-    for param_group in T_optimizer.param_groups:
-        param_group["lr"] = lr / 2
-    for param_group in F_optimizer.param_groups:
-        param_group["lr"] = lr
 
     print("Epoch={}, lr={}".format(epoch, F_optimizer.param_groups[0]["lr"]))
     pbar = tqdm(enumerate(training_data_loader), total=len(training_data_loader), desc=f"Epoch {epoch}")

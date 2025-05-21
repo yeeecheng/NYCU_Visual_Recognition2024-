@@ -125,7 +125,7 @@ class TrainDataset(Dataset):
         rs = os.path.join(self.args.data_file_dir, "rainy/rainTrain.txt")
         temp_ids += [id_.strip() for id_ in open(rs)]
         self.rs_ids = [{"clean_id": x, "de_type": 3} for x in temp_ids]
-        self.rs_ids = self.rs_ids * 2
+        self.rs_ids = self.rs_ids
 
         self.num_rl = len(self.rs_ids)
         myprint("Total Rainy Ids : {}".format(self.num_rl))
@@ -136,7 +136,7 @@ class TrainDataset(Dataset):
         snow = os.path.join(self.args.data_file_dir, "snowy/snowTrain.txt")
         temp_ids += [id_.strip() for id_ in open(snow)]
         self.snow_ids = [{"clean_id": x, "de_type": 8} for x in temp_ids]
-        self.snow_ids = self.snow_ids * 2
+        self.snow_ids = self.snow_ids
 
         self.num_snow = len(self.snow_ids)
         myprint("Total Snowy Ids : {}".format(self.num_snow))
@@ -255,10 +255,10 @@ class TrainDataset(Dataset):
                 # clean_img = crop_img(np.array(Image.open(clean_name).convert('RGB')), base=16)
                 # snow removal dataset
                 degrad_img = crop_img(np.array(
-                    Image.open(os.path.join(self.args.derain_dir, 'rainy/', sample["clean_id"])).convert('RGB')),
+                    Image.open(os.path.join(self.args.derain_dir, 'degraded/', sample["clean_id"])).convert('RGB')),
                                       base=16)
                 clean_img = crop_img(np.array(
-                    Image.open(os.path.join(self.args.derain_dir, 'gt/', sample["clean_id"])).convert('RGB')),
+                    Image.open(os.path.join(self.args.derain_dir, 'clean/', sample["clean_id"])).convert('RGB')),
                                      base=16)
                 clean_name = sample["clean_id"]
             elif de_id == 4:

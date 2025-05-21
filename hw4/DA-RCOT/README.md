@@ -20,6 +20,7 @@ cd DA-RCOT
 ```
 conda create -n DARCOT python=3.8
 conda activate DARCOT
+pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1
 pip install -r requirements.txt
 ```
 
