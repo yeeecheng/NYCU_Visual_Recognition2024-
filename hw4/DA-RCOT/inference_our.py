@@ -14,11 +14,11 @@ from torchvision.transforms import ToTensor
 parser = argparse.ArgumentParser(description="PyTorch SRResNet Eval")
 parser.add_argument("--cuda", action="store_true", help="use cuda?")
 
-parser.add_argument("--model", default="./checkpoint/model_allMRCNet128_98_200_1.0.pth", type=str, help="model path")
+parser.add_argument("--model", default="./checkpoint/model_allMRCNet128_255_300_1.0.pth", type=str, help="model path")
 parser.add_argument("--save", default="./results/restore_imgs", type=str, help="savepath, Default: results")
 parser.add_argument("--saveres", default="./results/res_imgs", type=str, help="savepath, Default: residual")
-parser.add_argument("--degset", default="./data/Test/degraded/", type=str, help="degraded data")
-parser.add_argument("--gpus", default="0", type=str, help="gpu ids")
+parser.add_argument("--degset", default="./data/test/degraded/", type=str, help="degraded data")
+parser.add_argument("--gpus", default="5", type=str, help="gpu ids")
 
 
 opt = parser.parse_args()

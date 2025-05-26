@@ -9,3 +9,10 @@ DA-RCOT/PLOSSrain.mat
 DA-RCOT/TLOSSrain.mat
 DA-RCOT/pred.npz
 DA-RCOT/logs
+PromptIR/data
+PromptIR/data_dir
+PromptIR/output
+PromptIR/train_ckpt
+*ckpt
+PromptIR/wandb
+*.npz
