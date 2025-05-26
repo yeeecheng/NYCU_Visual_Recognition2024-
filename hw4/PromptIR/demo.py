@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--test_path', type=str, default="test/demo/", help='save path of test images, can be directory or an image')
     parser.add_argument('--output_path', type=str, default="output/demo/", help='output save path')
-    parser.add_argument('--ckpt_name', type=str, default="./epoch=190-step=101803.ckpt", help='checkpoint save path')
+    parser.add_argument('--ckpt_name', type=str, default="./epoch=198-step=31840.ckpt", help='checkpoint save path')
     parser.add_argument('--tile',type=bool,default=False,help="Set it to use tiling")
     parser.add_argument('--tile_size', type=int, default=128, help='Tile size (e.g 720). None means testing on the original resolution image')
     parser.add_argument('--tile_overlap', type=int, default=32, help='Overlapping of different tiles')

@@ -4,7 +4,7 @@ python trainer.py --batchSize=3 \
                 --Sigma=10000 \
                 --sigma=1 \
                 --de_type derain \
-                --patch_size=128  \
+                --patch_size=200  \
                 --type all \
                 --gpus=1 \
                 --backbone=MRCNet \
