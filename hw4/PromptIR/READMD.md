@@ -4,3 +4,4 @@ pip install einops
 pip isntall wandb
 pip install lightning
 pip install matplotlib
+pip install kornia

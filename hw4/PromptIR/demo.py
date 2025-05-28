@@ -51,7 +51,7 @@ class PromptIRModel(pl.LightningModule):
     def __init__(self):
         super().__init__()
         self.net = PromptIR(decoder=True)
-        self.loss_fn  = nn.L1Loss()
+        # self.loss_fn  = nn.L1Loss()
 
     def forward(self,x):
         return self.net(x)
@@ -62,10 +62,10 @@ class PromptIRModel(pl.LightningModule):
         ([clean_name, de_id], degrad_patch, clean_patch) = batch
         restored = self.net(degrad_patch)
 
-        loss = self.loss_fn(restored,clean_patch)
+        # loss = self.loss_fn(restored,clean_patch)
         # Logging to TensorBoard (if installed) by default
-        self.log("train_loss", loss)
-        return loss
+        # self.log("train_loss", loss)
+        # return loss
 
     def lr_scheduler_step(self,scheduler,metric):
         scheduler.step(self.current_epoch)
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--test_path', type=str, default="test/demo/", help='save path of test images, can be directory or an image')
     parser.add_argument('--output_path', type=str, default="output/demo/", help='output save path')
-    parser.add_argument('--ckpt_name', type=str, default="./epoch=198-step=31840.ckpt", help='checkpoint save path')
+    parser.add_argument('--ckpt_name', type=str, default="./epoch=199-step=32000.ckpt", help='checkpoint save path')
     parser.add_argument('--tile',type=bool,default=False,help="Set it to use tiling")
     parser.add_argument('--tile_size', type=int, default=128, help='Tile size (e.g 720). None means testing on the original resolution image')
     parser.add_argument('--tile_overlap', type=int, default=32, help='Overlapping of different tiles')
@@ -94,6 +94,7 @@ if __name__ == '__main__':
 
 
     ckpt_path = "train_ckpt/" + opt.ckpt_name
+    # ckpt_path = "/swim-pool/yicheng/NYCU_Visual_Recognition2024-/hw4/PromptIR/wandb/run-20250526_171247-p0jfsbt3/train_ckpt_v2/epoch=158-step=25440.ckpt"
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 

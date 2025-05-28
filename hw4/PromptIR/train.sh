@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES="4,5" python train.py --de_type derain --cuda 0 --de_type derain --batch_size 10
+CUDA_VISIBLE_DEVICES="0" python train.py --de_type derain --cuda 0 --batch_size 10

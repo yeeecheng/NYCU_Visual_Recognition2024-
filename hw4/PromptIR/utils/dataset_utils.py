@@ -346,7 +346,7 @@ class TestSpecificDataset(Dataset):
                 raise Exception('Please pass an Image file')
             self.degraded_ids = name_list
         print("Total Images : {}".format(name_list))
-
+        print("!!!!")
         self.num_img = len(self.degraded_ids)
 
     def __getitem__(self, idx):
