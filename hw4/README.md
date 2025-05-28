@@ -103,6 +103,7 @@ python trainer.py [-h] [--batchSize BATCHSIZE] [--nEpochs NEPOCHS] [--lr LR] [--
 * test
 
 You can modify the augments usage:
+
 python inference_our.py [-h] [--cuda] [--model MODEL] [--save SAVE] [--saveres SAVERES] [--degset DEGSET] [--gpus GPUS]
 
 ## Performence snapshot
