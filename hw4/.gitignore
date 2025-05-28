@@ -1,10 +1,13 @@
 ./DA-RCOT/data
-*.png
+
 hw4_realse_dataset.zip
 example_img2npz.py
 __pycache__
 checkpoint
 checksample
+DA-RCOT/data
+DA-RCOT/data_dir
+DA-RCOT/results
 DA-RCOT/PLOSSrain.mat
 DA-RCOT/TLOSSrain.mat
 DA-RCOT/pred.npz
@@ -16,3 +19,7 @@ PromptIR/train_ckpt
 *ckpt
 PromptIR/wandb
 *.npz
+PromptIR/output_v1
+PromptIR/output_v2
+PromptIR/output_v3
+PromptIR/output_v4
